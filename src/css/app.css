@@ -429,3 +429,41 @@ body {
     font-size: 10px;
   }
 }
+
+.app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  --f7-toolbar-height: 70px;
+  z-index: 100;
+}
+
+.app-tabbar .toolbar-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.app-tabbar .link {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  box-sizing: border-box;
+}
+
+.app-tabbar .link .icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.app-tab-label {
+  display: block;
+  line-height: 1.3;
+}
