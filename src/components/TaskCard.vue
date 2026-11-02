@@ -5,17 +5,35 @@ import StatusBadge from './StatusBadge.vue'
 import PriorityBadge from './PriorityBadge.vue'
 
 const props = defineProps({
-  task: { type: Object, required: true }
+  task: {
+    type: Object,
+    required: true
+  },
+  editable: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const emit = defineEmits([
   'status-change',
   'priority-change',
-  'task-select'
+  'task-select',
+  'edit'
 ])
 
 const statusSequence = ['todo', 'progress', 'done']
 const prioritySequence = ['low', 'medium', 'high']
+
+const categoryLabels = {
+  study: 'Навчання',
+  work: 'Робота',
+  personal: 'Особисте'
+}
+
+const categoryLabel = computed(() =>
+  categoryLabels[props.task.category] || 'Навчання'
+)
 
 const statusActionText = computed(() => ({
   todo: 'Взяти в роботу',
@@ -63,6 +81,10 @@ function selectTask() {
     title: props.task.title
   })
 }
+
+function editTask() {
+  emit('edit', props.task.id)
+}
 </script>
 
 <template>
@@ -94,6 +116,13 @@ function selectTask() {
         </div>
       </div>
 
+      <div class="tf4-card-category">
+        <span>Категорія:</span>
+        <strong>
+          {{ categoryLabel }}
+        </strong>
+      </div>
+
       <div class="tf3-card-actions">
         <button
           type="button"
@@ -118,7 +147,37 @@ function selectTask() {
         >
           Вибрати завдання
         </button>
+
+        <button
+          v-if="editable"
+          type="button"
+          class="tf3-action"
+          @click="editTask"
+        >
+          Редагувати
+        </button>
       </div>
     </f7-card-content>
   </f7-card>
 </template>
+
+<style scoped>
+.tf4-card-category {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+  color: #aabbd0;
+  font-size: 12px;
+}
+
+.tf4-card-category strong {
+  padding: 5px 11px;
+  border-radius: 20px;
+  background: #174e68;
+  color: #8bdff7;
+  font-size: 11px;
+  font-weight: 700;
+}
+</style>

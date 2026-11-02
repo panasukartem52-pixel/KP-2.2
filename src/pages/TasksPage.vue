@@ -1,20 +1,30 @@
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import AppTabbar from '../components/AppTabbar.vue'
 import TaskCard from '../components/TaskCard.vue'
 import TaskCounter from '../components/TaskCounter.vue'
+import TaskForm from '../components/TaskForm.vue'
 import {
   taskState,
+  addTask,
+  updateTask,
   setTaskStatus,
   setTaskPriority
 } from '../store/tasks'
+
 import '../css/task-components.css'
+import '../css/task-form.css'
 
 const selectedStatus = ref('all')
 const selectedPriority = ref('all')
 const selectedSort = ref('high')
 const selectedTask = ref(null)
+
+const formVisible = ref(false)
+const editingId = ref(null)
+const formAnchor = ref(null)
+const feedback = ref('')
 
 const statusOptions = [
   { value: 'all', label: 'Усі' },
@@ -63,6 +73,12 @@ const sortedTasks = computed(() => {
   })
 })
 
+const editingTask = computed(() =>
+  taskState.tasks.find(
+    (task) => task.id === editingId.value
+  ) ?? null
+)
+
 function handleStatusChange(payload) {
   setTaskStatus(payload)
 }
@@ -73,6 +89,59 @@ function handlePriorityChange(payload) {
 
 function handleTaskSelect(payload) {
   selectedTask.value = payload
+}
+
+async function scrollToForm() {
+  await nextTick()
+
+  formAnchor.value?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  })
+}
+
+async function createTask() {
+  editingId.value = null
+  formVisible.value = true
+  feedback.value = ''
+
+  await scrollToForm()
+}
+
+async function editTask(id) {
+  editingId.value = id
+  formVisible.value = true
+  feedback.value = ''
+
+  await scrollToForm()
+}
+
+function cancelForm() {
+  formVisible.value = false
+  editingId.value = null
+}
+
+function saveTask(data) {
+  const isEditing = editingId.value !== null
+
+  const saved = isEditing
+    ? updateTask({ id: editingId.value, ...data })
+    : addTask(data)
+
+  if (!saved) {
+    feedback.value =
+      'Не вдалося зберегти завдання. Перевірте дані форми.'
+    return
+  }
+
+  feedback.value = isEditing
+    ? `Завдання «${saved.title}» оновлено.`
+    : `Завдання «${saved.title}» створено.`
+
+  cancelForm()
+
+  selectedStatus.value = 'all'
+  selectedPriority.value = 'all'
 }
 </script>
 
@@ -91,6 +160,35 @@ function handleTaskSelect(payload) {
         <p>
           Керуйте завданнями, статусами та пріоритетами.
         </p>
+
+        <button
+          type="button"
+          class="tf4-new-task"
+          @click="createTask"
+        >
+          + Додати завдання
+        </button>
+      </section>
+
+      <p
+        v-if="feedback"
+        class="tf4-feedback"
+        role="status"
+      >
+        {{ feedback }}
+      </p>
+
+      <section
+        v-if="formVisible"
+        ref="formAnchor"
+        class="tf4-form-section"
+      >
+        <TaskForm
+          :key="editingId ?? 'new'"
+          :task="editingTask"
+          @save="saveTask"
+          @cancel="cancelForm"
+        />
       </section>
 
       <section class="tf3-filters">
@@ -191,9 +289,11 @@ function handleTaskSelect(payload) {
             v-for="task in sortedTasks"
             :key="task.id"
             :task="task"
+            :editable="true"
             @status-change="handleStatusChange"
             @priority-change="handlePriorityChange"
             @task-select="handleTaskSelect"
+            @edit="editTask"
           />
         </div>
 
