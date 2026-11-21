@@ -20,6 +20,7 @@ const selectedStatus = ref('all')
 const selectedPriority = ref('all')
 const selectedSort = ref('high')
 const selectedTask = ref(null)
+const searchQuery = ref('')
 
 const formVisible = ref(false)
 const editingId = ref(null)
@@ -45,14 +46,17 @@ const sortOptions = [
   { value: 'low', label: 'Від низького до високого' }
 ]
 
-const filteredTasks = computed(() =>
-  taskState.tasks.filter((task) => (
+const filteredTasks = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase('uk-UA')
+
+  return taskState.tasks.filter((task) => (
     (selectedStatus.value === 'all' ||
       task.status === selectedStatus.value) &&
     (selectedPriority.value === 'all' ||
-      task.priority === selectedPriority.value)
+      task.priority === selectedPriority.value) &&
+    task.title.toLocaleLowerCase('uk-UA').includes(query)
   ))
-)
+})
 
 const sortedTasks = computed(() => {
   const priorityOrder = {
@@ -142,6 +146,7 @@ function saveTask(data) {
 
   selectedStatus.value = 'all'
   selectedPriority.value = 'all'
+  searchQuery.value = ''
 }
 </script>
 
@@ -192,6 +197,25 @@ function saveTask(data) {
       </section>
 
       <section class="tf3-filters">
+        <div class="tf3-filter-group">
+          <div class="tf3-filter-title">
+            Пошук завдань за назвою
+          </div>
+
+          <input
+            id="tf4-search"
+            v-model="searchQuery"
+            class="tf4-search-input"
+            type="search"
+            aria-label="Пошук завдань за назвою"
+            placeholder="Введіть назву завдання..."
+          />
+
+          <small class="tf4-search-hint">
+            Результати оновлюються автоматично.
+          </small>
+        </div>
+
         <div class="tf3-filter-group">
           <div class="tf3-filter-title">
             Фільтр за статусом
@@ -315,5 +339,32 @@ function saveTask(data) {
   border: 1px solid #35b4e5;
   border-radius: 10px;
   color: #edf4ff;
+}
+
+.tf4-search-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 15px;
+  border: 1px solid #42617d;
+  border-radius: 9px;
+  background: #0c192b;
+  color: #f4f9ff;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.tf4-search-input::placeholder {
+  color: #8fa7bf;
+}
+
+.tf4-search-input:focus {
+  outline: 2px solid #49bce7;
+  outline-offset: 1px;
+}
+
+.tf4-search-hint {
+  color: #9fb3ca;
+  font-size: 11px;
 }
 </style>

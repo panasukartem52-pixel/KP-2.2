@@ -1,6 +1,7 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { taskState } from '../store/tasks'
 
 const props = defineProps({
   task: { type: Object, default: null }
@@ -68,6 +69,14 @@ function isValidDate(value) {
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` === value
 }
 
+function isDuplicateTitle(title) {
+  const normalizedTitle = title.trim().toLocaleLowerCase('uk-UA')
+
+  return taskState.tasks.some((task) =>
+    task.title.trim().toLocaleLowerCase('uk-UA') === normalizedTitle
+  )
+}
+
 const errors = computed(() => {
   const result = {}
   const title = form.title.trim()
@@ -79,6 +88,8 @@ const errors = computed(() => {
     result.title = 'Назва має містити щонайменше 3 символи.'
   } else if (title.length > 80) {
     result.title = 'Максимальна довжина — 80 символів.'
+  } else if (!isEditing.value && isDuplicateTitle(title)) {
+    result.title = 'Завдання з такою назвою вже існує.'
   }
 
   if (description.length > 300) {
@@ -153,6 +164,10 @@ function clearForm() {
       </button>
     </div>
 
+    <p class="tf4-required-note">
+      Поля, позначені <span>*</span>, обов'язкові.
+    </p>
+
     <form
       class="tf4-form"
       novalidate
@@ -160,20 +175,23 @@ function clearForm() {
     >
       <div class="tf4-field tf4-field--wide">
         <label for="tf4-title">
-          Назва завдання *
+          Назва завдання
+          <span class="tf4-required" aria-hidden="true">*</span>
         </label>
 
         <input
           id="tf4-title"
           v-model.trim="form.title"
           type="text"
+          required
+          aria-required="true"
           placeholder="Наприклад: Підготувати звіт"
           maxlength="80"
           :aria-invalid="showErrors && !!errors.title"
-          aria-describedby="tf4-title-error"
+          :aria-describedby="showErrors && errors.title ? 'tf4-title-help tf4-title-error' : 'tf4-title-help'"
         />
 
-        <small>
+        <small id="tf4-title-help">
           Від 3 до 80 символів.
           Залишилося: {{ 80 - form.title.length }} символів
         </small>
@@ -182,6 +200,7 @@ function clearForm() {
           v-if="showErrors && errors.title"
           id="tf4-title-error"
           class="tf4-error"
+          role="alert"
         >
           {{ errors.title }}
         </p>
@@ -199,10 +218,10 @@ function clearForm() {
           rows="3"
           maxlength="300"
           :aria-invalid="showErrors && !!errors.description"
-          aria-describedby="tf4-description-error"
+          :aria-describedby="showErrors && errors.description ? 'tf4-description-help tf4-description-error' : 'tf4-description-help'"
         ></textarea>
 
-        <small>
+        <small id="tf4-description-help">
           Необов'язкове поле.
           Залишилося: {{ 300 - form.description.length }} символів
         </small>
@@ -211,6 +230,7 @@ function clearForm() {
           v-if="showErrors && errors.description"
           id="tf4-description-error"
           class="tf4-error"
+          role="alert"
         >
           {{ errors.description }}
         </p>
@@ -218,13 +238,17 @@ function clearForm() {
 
       <div class="tf4-field">
         <label for="tf4-status">
-          Статус *
+          Статус
+          <span class="tf4-required" aria-hidden="true">*</span>
         </label>
 
         <select
           id="tf4-status"
           v-model="form.status"
+          required
+          aria-required="true"
           :aria-invalid="showErrors && !!errors.status"
+          :aria-describedby="showErrors && errors.status ? 'tf4-status-error' : undefined"
         >
           <option value="todo">Заплановано</option>
           <option value="progress">У роботі</option>
@@ -233,7 +257,9 @@ function clearForm() {
 
         <p
           v-if="showErrors && errors.status"
+          id="tf4-status-error"
           class="tf4-error"
+          role="alert"
         >
           {{ errors.status }}
         </p>
@@ -241,13 +267,17 @@ function clearForm() {
 
       <div class="tf4-field">
         <label for="tf4-priority">
-          Пріоритет *
+          Пріоритет
+          <span class="tf4-required" aria-hidden="true">*</span>
         </label>
 
         <select
           id="tf4-priority"
           v-model="form.priority"
+          required
+          aria-required="true"
           :aria-invalid="showErrors && !!errors.priority"
+          :aria-describedby="showErrors && errors.priority ? 'tf4-priority-error' : undefined"
         >
           <option value="low">Низький</option>
           <option value="medium">Середній</option>
@@ -256,7 +286,9 @@ function clearForm() {
 
         <p
           v-if="showErrors && errors.priority"
+          id="tf4-priority-error"
           class="tf4-error"
+          role="alert"
         >
           {{ errors.priority }}
         </p>
@@ -264,14 +296,17 @@ function clearForm() {
 
       <div class="tf4-field tf4-field--wide">
         <label for="tf4-category">
-          Категорія *
+          Категорія
+          <span class="tf4-required" aria-hidden="true">*</span>
         </label>
 
         <select
           id="tf4-category"
           v-model="form.category"
+          required
+          aria-required="true"
           :aria-invalid="showErrors && !!errors.category"
-          aria-describedby="tf4-category-error"
+          :aria-describedby="showErrors && errors.category ? 'tf4-category-error' : undefined"
         >
           <option value="study">Навчання</option>
           <option value="work">Робота</option>
@@ -282,6 +317,7 @@ function clearForm() {
           v-if="showErrors && errors.category"
           id="tf4-category-error"
           class="tf4-error"
+          role="alert"
         >
           {{ errors.category }}
         </p>
@@ -289,25 +325,31 @@ function clearForm() {
 
       <div class="tf4-field tf4-field--wide">
         <label for="tf4-date">
-          Дата завершення *
+          Дата завершення
+          <span class="tf4-required" aria-hidden="true">*</span>
         </label>
 
         <input
           id="tf4-date"
           v-model="form.dueDate"
           type="date"
+          required
+          aria-required="true"
           :aria-invalid="showErrors && !!errors.dueDate"
-          aria-describedby="tf4-date-error"
+          :aria-describedby="showErrors && errors.dueDate ? 'tf4-date-help tf4-date-error' : 'tf4-date-help'"
         />
 
-        <small v-if="!isEditing">
-          Для нового завдання оберіть сьогоднішню або майбутню дату.
+        <small id="tf4-date-help">
+          {{ isEditing
+            ? 'Дата завершення завдання.'
+            : 'Оберіть сьогоднішню або майбутню дату.' }}
         </small>
 
         <p
           v-if="showErrors && errors.dueDate"
           id="tf4-date-error"
           class="tf4-error"
+          role="alert"
         >
           {{ errors.dueDate }}
         </p>
@@ -319,9 +361,7 @@ function clearForm() {
       >
         <strong>Попередній перегляд</strong>
 
-        <p>
-          {{ form.title || 'Назва нового завдання' }}
-        </p>
+        <p>{{ form.title || 'Назва нового завдання' }}</p>
 
         <span>
           {{ statusLabels[form.status] }} ·
@@ -331,10 +371,7 @@ function clearForm() {
       </div>
 
       <div class="tf4-actions tf4-field--wide">
-        <button
-          type="submit"
-          class="tf4-save"
-        >
+        <button type="submit" class="tf4-save">
           {{ isEditing ? 'Зберегти зміни' : 'Створити завдання' }}
         </button>
 
@@ -358,3 +395,22 @@ function clearForm() {
     </form>
   </div>
 </template>
+
+<style scoped>
+.tf4-required {
+  color: #ff8295;
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.tf4-required-note {
+  margin: 0 0 18px;
+  color: #b5c9df;
+  font-size: 12px;
+}
+
+.tf4-required-note span {
+  color: #ff8295;
+  font-weight: 800;
+}
+</style>

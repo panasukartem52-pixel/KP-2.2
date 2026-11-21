@@ -37,6 +37,14 @@ function getToday() {
   return `${year}-${month}-${day}`
 }
 
+function isDuplicateTitle(title) {
+  const normalizedTitle = title.trim().toLocaleLowerCase('uk-UA')
+
+  return taskState.tasks.some((task) =>
+    task.title.trim().toLocaleLowerCase('uk-UA') === normalizedTitle
+  )
+}
+
 function normalizeTaskData(data) {
   if (!data || typeof data !== 'object') return null
 
@@ -69,9 +77,14 @@ function normalizeTaskData(data) {
 
 export function addTask(data) {
   const normalized = normalizeTaskData(data)
+
   if (!normalized) return null
 
   if (normalized.dueDate < getToday()) {
+    return null
+  }
+
+  if (isDuplicateTitle(normalized.title)) {
     return null
   }
 
@@ -92,6 +105,7 @@ export function addTask(data) {
 
 export function updateTask({ id, ...data }) {
   const normalized = normalizeTaskData(data)
+
   if (!normalized) return null
 
   const task = taskState.tasks.find(
